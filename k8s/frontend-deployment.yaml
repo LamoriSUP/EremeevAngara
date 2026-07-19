@@ -4,62 +4,69 @@ metadata:
   name: frontend
   namespace: homework
   labels:
-    app: frontend
+    app.kubernetes.io/name: frontend
 spec:
-  replicas: 2                    
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
-      app: frontend
+      app.kubernetes.io/name: frontend
   template:
     metadata:
       labels:
-        app: frontend
+        app.kubernetes.io/name: frontend
     spec:
       containers:
-      - name: nginx
-        image: docker.io/krokodils/k8s-homework-frontend:v1
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
-          name: http
-        resources:
-          requests:
-            memory: "32Mi"
-            cpu: "50m"
-          limits:
-            memory: "64Mi"
-            cpu: "100m"
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 3
-          periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop: ["ALL"]
-      securityContext:
-        fsGroup: 1000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend
-  namespace: homework
-  labels:
-    app: frontend
-spec:
-  selector:
-    app: frontend
-  ports:
-  - port: 80
-    targetPort: 80
+        - name: frontend
+          image: docker.io/krokodils/k8s-homework-frontend:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: frontend-config
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
