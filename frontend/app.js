@@ -14,7 +14,7 @@ async function loadBackendInfo() {
         data.pod ?? "unknown";
 
     document.querySelector("#visits").textContent =
-        data.visits ?? "unknown";
+        data.total ?? "unknown";
 }
 
 document.querySelector("#refresh").addEventListener("click", () => {
