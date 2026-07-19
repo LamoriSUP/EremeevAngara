@@ -21,6 +21,7 @@ spec:
       labels:
         app.kubernetes.io/name: frontend
     spec:
+      serviceAccountName: frontend-sa
       containers:
         - name: frontend
           image: docker.io/krokodils/k8s-homework-frontend:v1
